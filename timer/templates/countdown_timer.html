@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Event Countdown Timers</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #333;
+        }
+        
+        .timer {
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 300px;
+        }
+        
+        .countdown {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e44d26;
+        }
+        
+        .event-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #221d1c;
+            margin-bottom: 10px;
+        }
+        
+        .event-description {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .add-button {
+            display: inline-block;
+            background-color: #e44d26;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        
+        .add-button:hover {
+            background-color: #d03d1a;
+        }
+        
+        .no-events {
+            color: #666;
+            font-style: italic;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Event Countdown Timers</h1>
+    
+    {% if events %}
+        {% for event in events %}
+        <div class="timer" id="timer-{{ event.id }}">
+            <div class="event-title">{{ event.name }}</div>
+            {% if event.description %}
+            <div class="event-description">{{ event.description }}</div>
+            {% endif %}
+            <h2>Time Remaining:</h2>
+            <div class="countdown" id="countdown-{{ event.id }}">
+                {{ event.hours|stringformat:"02d" }} : {{ event.minutes|stringformat:"02d" }} : {{ event.seconds|stringformat:"02d" }}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-events">No upcoming events. Add one below!</div>
+    {% endif %}
+    
+    <a href="{% url 'add_event' %}" class="add-button">Add New Event</a>
+
+    <script>
+        // Function to update a single timer
+        function updateTimer(timerId, hours, minutes, seconds) {
+            if (seconds > 0) {
+                seconds--;
+            } else {
+                if (minutes > 0) {
+                    minutes--;
+                    seconds = 59;
+                } else {
+                    if (hours > 0) {
+                        hours--;
+                        minutes = 59;
+                        seconds = 59;
+                    } else {
+                        // Timer has reached zero
+                        const timerElement = document.getElementById(`timer-${timerId}`);
+                        if (timerElement) {
+                            timerElement.style.display = 'none';
+                        }
+                        return null;
+                    }
+                }
+            }
+            return { hours, minutes, seconds };
+        }
+
+        // Initialize all timers
+        const timers = {};
+        {% for event in events %}
+        timers['{{ event.id }}'] = {
+            hours: {{ event.hours }},
+            minutes: {{ event.minutes }},
+            seconds: {{ event.seconds }}
+        };
+        {% endfor %}
+
+        // Update all timers every second
+        setInterval(() => {
+            Object.keys(timers).forEach(timerId => {
+                if (timers[timerId]) {
+                    const result = updateTimer(
+                        timerId,
+                        timers[timerId].hours,
+                        timers[timerId].minutes,
+                        timers[timerId].seconds
+                    );
+                    
+                    if (result) {
+                        timers[timerId] = result;
+                        document.getElementById(`countdown-${timerId}`).textContent =
+                            `${String(result.hours).padStart(2, '0')} : ` +
+                            `${String(result.minutes).padStart(2, '0')} : ` +
+                            `${String(result.seconds).padStart(2, '0')}`;
+                    } else {
+                        delete timers[timerId];
+                    }
+                }
+            });
+        }, 1000);
+    </script>
+</body>
+</html>
